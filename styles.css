@@ -1,7 +1,10 @@
 :root {
   --bg: #0f172a;
   --panel: #111827;
+<<<<<<< HEAD
+=======
   --accent: #22d3ee;
+>>>>>>> origin/main
   --text: #e5e7eb;
   --muted: #94a3b8;
   --good: #4ade80;
@@ -90,6 +93,14 @@ header p {
   color: #fca5a5;
 }
 
+<<<<<<< HEAD
+.small-note {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+=======
+>>>>>>> origin/main
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

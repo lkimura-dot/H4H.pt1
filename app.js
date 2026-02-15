@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js';
 import {
   getAuth,
@@ -13,6 +14,8 @@ import {
   setDoc,
 } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js';
 
+=======
+>>>>>>> origin/main
 const TICK_MS = 1000;
 const INACTIVITY_LIMIT_MS = 60 * 1000;
 const POINTS_PER_FOCUS_SECOND = 0.5;
@@ -26,7 +29,11 @@ const state = {
   equipped: { hat: '', outfit: '', accessory: '' },
   inactiveSince: null,
   inactivityModalOpen: false,
+<<<<<<< HEAD
   user: null,
+=======
+  username: null,
+>>>>>>> origin/main
 };
 
 const authPanel = document.getElementById('auth-panel');
@@ -37,6 +44,12 @@ const authMessage = document.getElementById('auth-message');
 const currentUserEl = document.getElementById('current-user');
 const logoutBtn = document.getElementById('logout-btn');
 
+<<<<<<< HEAD
+=======
+};
+
+const storeKey = 'focusforge-state-v1';
+>>>>>>> origin/main
 const screenTimeEl = document.getElementById('screen-time');
 const focusTimeEl = document.getElementById('focus-time');
 const distractionCountEl = document.getElementById('distraction-count');
@@ -59,6 +72,7 @@ const shopCatalog = [
   { id: 'acc-headphones', slot: 'accessory', icon: '🎧', name: 'Headphones', cost: 30 },
 ];
 
+<<<<<<< HEAD
 if (!window.FIREBASE_CONFIG || window.FIREBASE_CONFIG.apiKey?.startsWith('REPLACE_')) {
   authMessage.textContent = 'Please set firebase-config.js with your Firebase project settings.';
 }
@@ -78,6 +92,8 @@ function defaultProgress() {
   };
 }
 
+=======
+>>>>>>> origin/main
 function formatSeconds(seconds) {
   const s = String(seconds % 60).padStart(2, '0');
   const m = String(Math.floor(seconds / 60) % 60).padStart(2, '0');
@@ -86,6 +102,7 @@ function formatSeconds(seconds) {
 }
 
 function applyProgress(progress) {
+<<<<<<< HEAD
   const safe = { ...defaultProgress(), ...progress };
   state.totalSeconds = safe.totalSeconds;
   state.focusSeconds = safe.focusSeconds;
@@ -93,6 +110,14 @@ function applyProgress(progress) {
   state.points = safe.points;
   state.owned = Array.isArray(safe.owned) ? safe.owned : [];
   state.equipped = safe.equipped ?? defaultProgress().equipped;
+=======
+  state.totalSeconds = progress.totalSeconds ?? 0;
+  state.focusSeconds = progress.focusSeconds ?? 0;
+  state.distractionCount = progress.distractionCount ?? 0;
+  state.points = progress.points ?? 0;
+  state.owned = Array.isArray(progress.owned) ? progress.owned : [];
+  state.equipped = progress.equipped ?? { hat: '', outfit: '', accessory: '' };
+>>>>>>> origin/main
 }
 
 function serializeProgress() {
@@ -106,6 +131,7 @@ function serializeProgress() {
   };
 }
 
+<<<<<<< HEAD
 async function loadProgress(uid) {
   const docRef = doc(db, 'progress', uid);
   const snap = await getDoc(docRef);
@@ -124,6 +150,67 @@ function queueSaveProgress() {
   saveProgress().catch(() => {
     authMessage.textContent = 'Unable to save progress right now. Check Firebase rules/network.';
   });
+=======
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    ...options,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+async function saveProgress() {
+  if (!state.username) return;
+  try {
+    await api('/api/progress', {
+      method: 'POST',
+      body: JSON.stringify({ progress: serializeProgress() }),
+    });
+  } catch {
+    // silent background sync failure
+  }
+}
+
+function saveProgressBeacon() {
+  if (!state.username || !navigator.sendBeacon) return;
+  const blob = new Blob([JSON.stringify({ progress: serializeProgress() })], {
+    type: 'application/json',
+  });
+  navigator.sendBeacon('/api/progress/beacon', blob);
+}
+
+function saveState() {
+  localStorage.setItem(
+    storeKey,
+    JSON.stringify({
+      totalSeconds: state.totalSeconds,
+      focusSeconds: state.focusSeconds,
+      distractionCount: state.distractionCount,
+      points: state.points,
+      owned: state.owned,
+      equipped: state.equipped,
+    }),
+  );
+}
+
+function loadState() {
+  const raw = localStorage.getItem(storeKey);
+  if (!raw) return;
+  try {
+    const parsed = JSON.parse(raw);
+    state.totalSeconds = parsed.totalSeconds ?? 0;
+    state.focusSeconds = parsed.focusSeconds ?? 0;
+    state.distractionCount = parsed.distractionCount ?? 0;
+    state.points = parsed.points ?? 0;
+    state.owned = Array.isArray(parsed.owned) ? parsed.owned : [];
+    state.equipped = parsed.equipped ?? state.equipped;
+  } catch {
+    localStorage.removeItem(storeKey);
+  }
+>>>>>>> origin/main
 }
 
 function updateAvatar() {
@@ -152,7 +239,21 @@ function buyItem(item) {
   renderShop();
   refreshStats();
   updateAvatar();
+<<<<<<< HEAD
   queueSaveProgress();
+=======
+  saveProgress();
+  if (ownItem(item.id) || state.points < item.cost) {
+    return;
+  }
+  state.points -= item.cost;
+  state.owned.push(item.id);
+  state.equipped[item.slot] = item.id;
+  saveState();
+  renderShop();
+  refreshStats();
+  updateAvatar();
+>>>>>>> origin/main
 }
 
 function equipItem(item) {
@@ -160,7 +261,14 @@ function equipItem(item) {
   state.equipped[item.slot] = item.id;
   renderShop();
   updateAvatar();
+<<<<<<< HEAD
   queueSaveProgress();
+=======
+  saveProgress();
+  saveState();
+  renderShop();
+  updateAvatar();
+>>>>>>> origin/main
 }
 
 function renderShop() {
@@ -173,6 +281,13 @@ function renderShop() {
     const isEquipped = state.equipped[item.slot] === item.id;
 
     card.innerHTML = `<h3>${item.icon} ${item.name}</h3><p>Cost: ${item.cost} pts</p>`;
+<<<<<<< HEAD
+=======
+    card.innerHTML = `
+      <h3>${item.icon} ${item.name}</h3>
+      <p>Cost: ${item.cost} pts</p>
+    `;
+>>>>>>> origin/main
 
     const button = document.createElement('button');
     if (!owned) {
@@ -203,6 +318,18 @@ function checkInactivity() {
     state.inactiveSince = Date.now();
   }
   if (!state.inactiveSince) return false;
+<<<<<<< HEAD
+=======
+  if (document.hidden) {
+    if (!state.inactiveSince) {
+      state.inactiveSince = Date.now();
+    }
+  }
+
+  if (!state.inactiveSince) {
+    return false;
+  }
+>>>>>>> origin/main
 
   const inactiveDuration = Date.now() - state.inactiveSince;
   if (inactiveDuration >= INACTIVITY_LIMIT_MS && !state.inactivityModalOpen) {
@@ -210,14 +337,23 @@ function checkInactivity() {
     state.inactivityModalOpen = true;
     inactivityModal.showModal();
     refreshStats();
+<<<<<<< HEAD
     queueSaveProgress();
+=======
+    saveProgress();
+    saveState();
+>>>>>>> origin/main
     return true;
   }
   return state.inactivityModalOpen;
 }
 
 function tick() {
+<<<<<<< HEAD
   if (!state.user) return;
+=======
+  if (!state.username) return;
+>>>>>>> origin/main
   state.totalSeconds += 1;
   const distracted = checkInactivity();
   if (!distracted) {
@@ -226,7 +362,11 @@ function tick() {
   }
   refreshStats();
   renderShop();
+<<<<<<< HEAD
   if (state.totalSeconds % 10 === 0) queueSaveProgress();
+=======
+  if (state.totalSeconds % 10 === 0) saveProgress();
+>>>>>>> origin/main
 }
 
 function setLoggedInUI(loggedIn) {
@@ -235,6 +375,7 @@ function setLoggedInUI(loggedIn) {
 }
 
 async function handleLogin(mode) {
+<<<<<<< HEAD
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
   authMessage.textContent = '';
@@ -247,6 +388,33 @@ async function handleLogin(mode) {
     }
 
     await signInWithEmailAndPassword(auth, email, password);
+=======
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+
+  try {
+    if (mode === 'register') {
+      await api('/api/register', {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      });
+      authMessage.textContent = 'Registered successfully. Now logging you in...';
+    }
+
+    const loginData = await api('/api/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
+
+    state.username = loginData.username;
+    applyProgress(loginData.progress || {});
+    currentUserEl.textContent = state.username;
+    setLoggedInUI(true);
+    refreshStats();
+    renderShop();
+    updateAvatar();
+    authMessage.textContent = '';
+>>>>>>> origin/main
   } catch (error) {
     authMessage.textContent = error.message;
   }
@@ -262,6 +430,7 @@ registerBtn.addEventListener('click', async () => {
 });
 
 logoutBtn.addEventListener('click', async () => {
+<<<<<<< HEAD
   try {
     await saveProgress();
   } catch {
@@ -270,6 +439,25 @@ logoutBtn.addEventListener('click', async () => {
   await signOut(auth);
 });
 
+=======
+  await saveProgress();
+  try {
+    await api('/api/logout', { method: 'POST' });
+  } catch {
+    // ignore
+  }
+  state.username = null;
+  applyProgress({});
+  setLoggedInUI(false);
+  refreshStats();
+  renderShop();
+  updateAvatar();
+});
+
+  saveState();
+}
+
+>>>>>>> origin/main
 ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll', 'focus'].forEach((eventName) => {
   window.addEventListener(eventName, onActiveSignal, { passive: true });
 });
@@ -278,6 +466,7 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) onActiveSignal();
 });
 
+<<<<<<< HEAD
 window.addEventListener('beforeunload', () => {
   queueSaveProgress();
 });
@@ -307,13 +496,41 @@ onAuthStateChanged(auth, async (user) => {
   } catch {
     applyProgress(defaultProgress());
     authMessage.textContent = 'Could not load Firebase progress. Check Firestore setup/rules.';
+=======
+window.addEventListener('beforeunload', saveProgressBeacon);
+
+refocusBtn.addEventListener('click', onActiveSignal);
+
+(async function bootstrap() {
+  try {
+    const session = await api('/api/session');
+    state.username = session.username;
+    applyProgress(session.progress || {});
+    currentUserEl.textContent = state.username;
+    setLoggedInUI(true);
+  } catch {
+    setLoggedInUI(false);
+>>>>>>> origin/main
   }
 
   refreshStats();
   renderShop();
   updateAvatar();
+<<<<<<< HEAD
 });
 
+=======
+  setInterval(tick, TICK_MS);
+})();
+  if (!document.hidden) {
+    onActiveSignal();
+  }
+});
+
+refocusBtn.addEventListener('click', onActiveSignal);
+
+loadState();
+>>>>>>> origin/main
 refreshStats();
 renderShop();
 updateAvatar();

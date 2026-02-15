@@ -4,6 +4,7 @@ FocusForge is a screen-time and focus tracker with:
 - inactivity popup after 1 minute of no interaction,
 - points earned from focused time,
 - avatar customization shop,
+<<<<<<< HEAD
 - Firebase Authentication (email/password) + Firestore progress saving.
 
 ## 1) Firebase setup
@@ -27,6 +28,11 @@ service cloud.firestore {
 ```
 
 ## 2) Run
+=======
+- backend login + saved progress for relogin.
+
+## Run
+>>>>>>> origin/main
 
 ```bash
 node server.js
@@ -34,8 +40,17 @@ node server.js
 
 Open: http://localhost:4173
 
+<<<<<<< HEAD
 ## 3) Login flow
 
 - Register with email/password.
 - Login.
 - Progress automatically saves to Firestore and restores when you login again.
+=======
+## Account + saved data
+
+1. Register a username/password.
+2. Login.
+3. Your progress is saved to the backend periodically, on key actions, and when leaving the page.
+4. Login again later with the same account to restore your data.
+>>>>>>> origin/main

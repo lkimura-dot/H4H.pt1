@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/lkimura-dot/H4H.pt1#readme",
   "dependencies": {
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "firebase": "^12.9.0"
   }
 }

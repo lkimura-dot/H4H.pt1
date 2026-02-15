@@ -22,6 +22,9 @@ const authMessage = document.getElementById('auth-message');
 const currentUserEl = document.getElementById('current-user');
 const logoutBtn = document.getElementById('logout-btn');
 
+};
+
+const storeKey = 'focusforge-state-v1';
 const screenTimeEl = document.getElementById('screen-time');
 const focusTimeEl = document.getElementById('focus-time');
 const distractionCountEl = document.getElementById('distraction-count');
@@ -102,6 +105,36 @@ function saveProgressBeacon() {
   navigator.sendBeacon('/api/progress/beacon', blob);
 }
 
+function saveState() {
+  localStorage.setItem(
+    storeKey,
+    JSON.stringify({
+      totalSeconds: state.totalSeconds,
+      focusSeconds: state.focusSeconds,
+      distractionCount: state.distractionCount,
+      points: state.points,
+      owned: state.owned,
+      equipped: state.equipped,
+    }),
+  );
+}
+
+function loadState() {
+  const raw = localStorage.getItem(storeKey);
+  if (!raw) return;
+  try {
+    const parsed = JSON.parse(raw);
+    state.totalSeconds = parsed.totalSeconds ?? 0;
+    state.focusSeconds = parsed.focusSeconds ?? 0;
+    state.distractionCount = parsed.distractionCount ?? 0;
+    state.points = parsed.points ?? 0;
+    state.owned = Array.isArray(parsed.owned) ? parsed.owned : [];
+    state.equipped = parsed.equipped ?? state.equipped;
+  } catch {
+    localStorage.removeItem(storeKey);
+  }
+}
+
 function updateAvatar() {
   Object.entries(avatarEls).forEach(([slot, el]) => {
     const item = shopCatalog.find((catalogItem) => catalogItem.id === state.equipped[slot]);
@@ -129,6 +162,16 @@ function buyItem(item) {
   refreshStats();
   updateAvatar();
   saveProgress();
+  if (ownItem(item.id) || state.points < item.cost) {
+    return;
+  }
+  state.points -= item.cost;
+  state.owned.push(item.id);
+  state.equipped[item.slot] = item.id;
+  saveState();
+  renderShop();
+  refreshStats();
+  updateAvatar();
 }
 
 function equipItem(item) {
@@ -137,6 +180,9 @@ function equipItem(item) {
   renderShop();
   updateAvatar();
   saveProgress();
+  saveState();
+  renderShop();
+  updateAvatar();
 }
 
 function renderShop() {
@@ -149,6 +195,10 @@ function renderShop() {
     const isEquipped = state.equipped[item.slot] === item.id;
 
     card.innerHTML = `<h3>${item.icon} ${item.name}</h3><p>Cost: ${item.cost} pts</p>`;
+    card.innerHTML = `
+      <h3>${item.icon} ${item.name}</h3>
+      <p>Cost: ${item.cost} pts</p>
+    `;
 
     const button = document.createElement('button');
     if (!owned) {
@@ -179,6 +229,15 @@ function checkInactivity() {
     state.inactiveSince = Date.now();
   }
   if (!state.inactiveSince) return false;
+  if (document.hidden) {
+    if (!state.inactiveSince) {
+      state.inactiveSince = Date.now();
+    }
+  }
+
+  if (!state.inactiveSince) {
+    return false;
+  }
 
   const inactiveDuration = Date.now() - state.inactiveSince;
   if (inactiveDuration >= INACTIVITY_LIMIT_MS && !state.inactivityModalOpen) {
@@ -187,6 +246,7 @@ function checkInactivity() {
     inactivityModal.showModal();
     refreshStats();
     saveProgress();
+    saveState();
     return true;
   }
   return state.inactivityModalOpen;
@@ -265,6 +325,9 @@ logoutBtn.addEventListener('click', async () => {
   updateAvatar();
 });
 
+  saveState();
+}
+
 ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll', 'focus'].forEach((eventName) => {
   window.addEventListener(eventName, onActiveSignal, { passive: true });
 });
@@ -293,3 +356,15 @@ refocusBtn.addEventListener('click', onActiveSignal);
   updateAvatar();
   setInterval(tick, TICK_MS);
 })();
+  if (!document.hidden) {
+    onActiveSignal();
+  }
+});
+
+refocusBtn.addEventListener('click', onActiveSignal);
+
+loadState();
+refreshStats();
+renderShop();
+updateAvatar();
+setInterval(tick, TICK_MS);

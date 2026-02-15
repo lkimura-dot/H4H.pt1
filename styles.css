@@ -19,6 +19,10 @@ body {
   min-height: 100vh;
 }
 
+.hidden {
+  display: none !important;
+}
+
 .app {
   width: min(960px, 92vw);
   margin: 2rem auto;
@@ -40,6 +44,50 @@ header p {
   border: 1px solid #263045;
   border-radius: 12px;
   padding: 1rem;
+}
+
+.auth form {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.auth label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.auth input {
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0b1220;
+  color: var(--text);
+  padding: 0.5rem;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.auth-actions button,
+#logout-btn {
+  border: 0;
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  color: #fff;
+  background: #1d4ed8;
+  cursor: pointer;
+}
+
+.account {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#auth-message {
+  min-height: 1.2rem;
+  color: #fca5a5;
 }
 
 .stat-grid {

@@ -11,6 +11,17 @@ const state = {
   equipped: { hat: '', outfit: '', accessory: '' },
   inactiveSince: null,
   inactivityModalOpen: false,
+  username: null,
+};
+
+const authPanel = document.getElementById('auth-panel');
+const dashboard = document.getElementById('dashboard');
+const authForm = document.getElementById('auth-form');
+const registerBtn = document.getElementById('register-btn');
+const authMessage = document.getElementById('auth-message');
+const currentUserEl = document.getElementById('current-user');
+const logoutBtn = document.getElementById('logout-btn');
+
 };
 
 const storeKey = 'focusforge-state-v1';
@@ -41,6 +52,57 @@ function formatSeconds(seconds) {
   const m = String(Math.floor(seconds / 60) % 60).padStart(2, '0');
   const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
   return `${h}:${m}:${s}`;
+}
+
+function applyProgress(progress) {
+  state.totalSeconds = progress.totalSeconds ?? 0;
+  state.focusSeconds = progress.focusSeconds ?? 0;
+  state.distractionCount = progress.distractionCount ?? 0;
+  state.points = progress.points ?? 0;
+  state.owned = Array.isArray(progress.owned) ? progress.owned : [];
+  state.equipped = progress.equipped ?? { hat: '', outfit: '', accessory: '' };
+}
+
+function serializeProgress() {
+  return {
+    totalSeconds: state.totalSeconds,
+    focusSeconds: state.focusSeconds,
+    distractionCount: state.distractionCount,
+    points: state.points,
+    owned: state.owned,
+    equipped: state.equipped,
+  };
+}
+
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    ...options,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+async function saveProgress() {
+  if (!state.username) return;
+  try {
+    await api('/api/progress', {
+      method: 'POST',
+      body: JSON.stringify({ progress: serializeProgress() }),
+    });
+  } catch {
+    // silent background sync failure
+  }
+}
+
+function saveProgressBeacon() {
+  if (!state.username || !navigator.sendBeacon) return;
+  const blob = new Blob([JSON.stringify({ progress: serializeProgress() })], {
+    type: 'application/json',
+  });
+  navigator.sendBeacon('/api/progress/beacon', blob);
 }
 
 function saveState() {
@@ -92,6 +154,14 @@ function ownItem(itemId) {
 }
 
 function buyItem(item) {
+  if (ownItem(item.id) || state.points < item.cost) return;
+  state.points -= item.cost;
+  state.owned.push(item.id);
+  state.equipped[item.slot] = item.id;
+  renderShop();
+  refreshStats();
+  updateAvatar();
+  saveProgress();
   if (ownItem(item.id) || state.points < item.cost) {
     return;
   }
@@ -107,6 +177,9 @@ function buyItem(item) {
 function equipItem(item) {
   if (!ownItem(item.id)) return;
   state.equipped[item.slot] = item.id;
+  renderShop();
+  updateAvatar();
+  saveProgress();
   saveState();
   renderShop();
   updateAvatar();
@@ -121,6 +194,7 @@ function renderShop() {
     const owned = ownItem(item.id);
     const isEquipped = state.equipped[item.slot] === item.id;
 
+    card.innerHTML = `<h3>${item.icon} ${item.name}</h3><p>Cost: ${item.cost} pts</p>`;
     card.innerHTML = `
       <h3>${item.icon} ${item.name}</h3>
       <p>Cost: ${item.cost} pts</p>
@@ -151,6 +225,10 @@ function onActiveSignal() {
 }
 
 function checkInactivity() {
+  if (document.hidden && !state.inactiveSince) {
+    state.inactiveSince = Date.now();
+  }
+  if (!state.inactiveSince) return false;
   if (document.hidden) {
     if (!state.inactiveSince) {
       state.inactiveSince = Date.now();
@@ -167,6 +245,7 @@ function checkInactivity() {
     state.inactivityModalOpen = true;
     inactivityModal.showModal();
     refreshStats();
+    saveProgress();
     saveState();
     return true;
   }
@@ -174,6 +253,7 @@ function checkInactivity() {
 }
 
 function tick() {
+  if (!state.username) return;
   state.totalSeconds += 1;
   const distracted = checkInactivity();
   if (!distracted) {
@@ -182,6 +262,69 @@ function tick() {
   }
   refreshStats();
   renderShop();
+  if (state.totalSeconds % 10 === 0) saveProgress();
+}
+
+function setLoggedInUI(loggedIn) {
+  authPanel.classList.toggle('hidden', loggedIn);
+  dashboard.classList.toggle('hidden', !loggedIn);
+}
+
+async function handleLogin(mode) {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+
+  try {
+    if (mode === 'register') {
+      await api('/api/register', {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      });
+      authMessage.textContent = 'Registered successfully. Now logging you in...';
+    }
+
+    const loginData = await api('/api/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
+
+    state.username = loginData.username;
+    applyProgress(loginData.progress || {});
+    currentUserEl.textContent = state.username;
+    setLoggedInUI(true);
+    refreshStats();
+    renderShop();
+    updateAvatar();
+    authMessage.textContent = '';
+  } catch (error) {
+    authMessage.textContent = error.message;
+  }
+}
+
+authForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  await handleLogin('login');
+});
+
+registerBtn.addEventListener('click', async () => {
+  await handleLogin('register');
+});
+
+logoutBtn.addEventListener('click', async () => {
+  await saveProgress();
+  try {
+    await api('/api/logout', { method: 'POST' });
+  } catch {
+    // ignore
+  }
+  state.username = null;
+  applyProgress({});
+  setLoggedInUI(false);
+  refreshStats();
+  renderShop();
+  updateAvatar();
+});
+
   saveState();
 }
 
@@ -190,6 +333,29 @@ function tick() {
 });
 
 document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) onActiveSignal();
+});
+
+window.addEventListener('beforeunload', saveProgressBeacon);
+
+refocusBtn.addEventListener('click', onActiveSignal);
+
+(async function bootstrap() {
+  try {
+    const session = await api('/api/session');
+    state.username = session.username;
+    applyProgress(session.progress || {});
+    currentUserEl.textContent = state.username;
+    setLoggedInUI(true);
+  } catch {
+    setLoggedInUI(false);
+  }
+
+  refreshStats();
+  renderShop();
+  updateAvatar();
+  setInterval(tick, TICK_MS);
+})();
   if (!document.hidden) {
     onActiveSignal();
   }

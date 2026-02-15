@@ -13,6 +13,69 @@
         <p>Track your screen time, stay focused, and style your avatar with earned points.</p>
       </header>
 
+      <section class="panel auth" id="auth-panel">
+        <h2>Login / Register</h2>
+        <p>Create an account so your focus data is saved when you leave and restored when you relogin.</p>
+        <form id="auth-form">
+          <label>
+            Username
+            <input id="username" name="username" required minlength="3" />
+          </label>
+          <label>
+            Password
+            <input id="password" name="password" type="password" required minlength="4" />
+          </label>
+          <div class="auth-actions">
+            <button type="submit" data-mode="login">Login</button>
+            <button type="button" id="register-btn">Register</button>
+          </div>
+        </form>
+        <p id="auth-message" aria-live="polite"></p>
+      </section>
+
+      <section id="dashboard" class="hidden">
+        <section class="panel account">
+          <p>Logged in as <strong id="current-user"></strong></p>
+          <button id="logout-btn">Logout</button>
+        </section>
+
+        <section class="stats panel">
+          <h2>Today's Focus Stats</h2>
+          <div class="stat-grid">
+            <article>
+              <h3>Total Screen Time</h3>
+              <p id="screen-time">00:00:00</p>
+            </article>
+            <article>
+              <h3>Focused Time</h3>
+              <p id="focus-time">00:00:00</p>
+            </article>
+            <article>
+              <h3>Distraction Alerts</h3>
+              <p id="distraction-count">0</p>
+            </article>
+            <article>
+              <h3>Points</h3>
+              <p id="points">0</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="avatar panel">
+          <h2>Your Avatar</h2>
+          <div class="avatar-display" id="avatar-display">
+            <span class="layer base">🧍</span>
+            <span class="layer hat" id="avatar-hat"></span>
+            <span class="layer outfit" id="avatar-outfit"></span>
+            <span class="layer accessory" id="avatar-accessory"></span>
+          </div>
+        </section>
+
+        <section class="shop panel">
+          <h2>Avatar Shop</h2>
+          <p>Spend your points on clothing and accessories.</p>
+          <div class="items" id="shop-items"></div>
+        </section>
       <section class="stats panel">
         <h2>Today's Focus Stats</h2>
         <div class="stat-grid">
